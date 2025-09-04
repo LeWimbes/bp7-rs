@@ -22,6 +22,22 @@ pub fn ts_ms() -> u64 {
         .as_millis() as u64
 }
 
+/// Convert a value to a CBOR-encoded vector
+pub fn to_cbor_vec<T: serde::ser::Serialize>(
+    val: &T,
+) -> Result<Vec<u8>, ciborium::ser::Error<std::io::Error>> {
+    let mut buf = Vec::new();
+    ciborium::into_writer(val, &mut buf)?;
+    Ok(buf)
+}
+
+/// Convert a CBOR-encoded vector back into a value
+pub fn from_cbor_slice<T: serde::de::DeserializeOwned>(
+    b: &[u8],
+) -> Result<T, ciborium::de::Error<std::io::Error>> {
+    ciborium::from_reader(b)
+}
+
 /// Convert byte slice into a hex string
 pub fn hexify(buf: &[u8]) -> String {
     let mut hexstr = String::new();
@@ -44,7 +60,7 @@ pub fn ser_dump<T: serde::ser::Serialize>(input: &T, hr: &str) {
     println!("human-readable | {}", hr);
     let json = serde_json::to_string(input).unwrap();
     println!("json | `{}`", json);
-    let cbor = serde_cbor::to_vec(input).unwrap();
+    let cbor = to_cbor_vec(input).unwrap();
     println!(
         "hex string | [`{}`](http://cbor.me/?bytes={})",
         hexify(&cbor),

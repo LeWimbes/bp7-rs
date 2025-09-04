@@ -12,6 +12,7 @@ use super::eid::*;
 use super::flags::*;
 use super::primary::*;
 use crate::error::{Error, ErrorList};
+use crate::helpers;
 use thiserror::Error;
 
 /// Version for upcoming bundle protocol standard is 7.
@@ -332,7 +333,7 @@ impl Bundle {
     /// Serialize bundle as CBOR encoded byte buffer.
     pub fn to_cbor(&mut self) -> ByteBuffer {
         self.calculate_crc();
-        let mut bytebuf = serde_cbor::to_vec(&self).expect("Error serializing bundle as cbor.");
+        let mut bytebuf = helpers::to_cbor_vec(&self).expect("Error serializing bundle as cbor.");
         bytebuf[0] = 0x9f; // TODO: fix hack, indefinite-length array encoding
         bytebuf.push(0xff); // break mark
         bytebuf
@@ -407,7 +408,7 @@ impl TryFrom<ByteBuffer> for Bundle {
     type Error = Error;
 
     fn try_from(item: ByteBuffer) -> Result<Self, Self::Error> {
-        match serde_cbor::from_slice(&item) {
+        match helpers::from_cbor_slice(&item) {
             Ok(bndl) => Ok(bndl),
             Err(err) => Err(err.into()),
         }
@@ -419,7 +420,7 @@ impl TryFrom<&[u8]> for Bundle {
     type Error = Error;
 
     fn try_from(item: &[u8]) -> Result<Self, Self::Error> {
-        match serde_cbor::from_slice(item) {
+        match helpers::from_cbor_slice(item) {
             Ok(bndl) => Ok(bndl),
             Err(err) => Err(err.into()),
         }

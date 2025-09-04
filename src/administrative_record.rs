@@ -3,6 +3,7 @@ use crate::bundle::ByteBuffer;
 use crate::flags::BlockControlFlags;
 use crate::flags::BundleControlFlags;
 use crate::flags::BundleValidation;
+use crate::helpers;
 use crate::{bundle, crc, dtn_time_now, primary};
 use core::fmt;
 use serde::de::{SeqAccess, Visitor};
@@ -94,7 +95,7 @@ impl<'de> Deserialize<'de> for AdministrativeRecord {
 
 impl AdministrativeRecord {
     pub fn to_payload(&self) -> crate::canonical::CanonicalBlock {
-        let data: ByteBuffer = serde_cbor::to_vec(&self).unwrap();
+        let data: ByteBuffer = helpers::to_cbor_vec(&self).unwrap();
 
         crate::canonical::new_payload_block(BlockControlFlags::empty(), data)
     }

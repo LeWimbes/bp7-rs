@@ -1,5 +1,6 @@
 use crate::error::Error;
 use crate::error::ErrorList;
+use crate::helpers;
 
 use super::bundle::*;
 use super::crc::{CRC_16, CRC_32, CRC_NO, CrcBlock, CrcRawType, CrcValue};
@@ -140,7 +141,7 @@ impl Serialize for CanonicalBlock {
             }
             _ => {
                 seq.serialize_element(&serde_bytes::Bytes::new(
-                    &serde_cbor::to_vec(&self.data).unwrap(),
+                    &helpers::to_cbor_vec(&self.data).unwrap(),
                 ))?;
             }
         };
@@ -195,18 +196,18 @@ impl<'de> Deserialize<'de> for CanonicalBlock {
                     //dbg!(crate::helpers::hexify(&raw_payload));
                     CanonicalData::Data(raw_payload)
                 } else if block_type == BUNDLE_AGE_BLOCK {
-                    CanonicalData::BundleAge(serde_cbor::from_slice::<u64>(&raw_payload).map_err(
-                        |err| {
+                    CanonicalData::BundleAge(
+                        helpers::from_cbor_slice::<u64>(&raw_payload).map_err(|err| {
                             de::Error::custom(format!("error decoding bundle age block: {}", err))
-                        },
-                    )?)
+                        })?,
+                    )
                 } else if block_type == HOP_COUNT_BLOCK {
-                    let hc: (u8, u8) = serde_cbor::from_slice(&raw_payload).map_err(|err| {
+                    let hc: (u8, u8) = helpers::from_cbor_slice(&raw_payload).map_err(|err| {
                         de::Error::custom(format!("error decoding hop count block: {}", err))
                     })?;
                     CanonicalData::HopCount(hc.0, hc.1)
                 } else if block_type == PREVIOUS_NODE_BLOCK {
-                    CanonicalData::PreviousNode(serde_cbor::from_slice(&raw_payload).map_err(
+                    CanonicalData::PreviousNode(helpers::from_cbor_slice(&raw_payload).map_err(
                         |err| {
                             de::Error::custom(format!(
                                 "error decoding previous node block: {}",
@@ -274,7 +275,7 @@ impl CrcBlock for CanonicalBlock {
 }
 impl Block for CanonicalBlock {
     fn to_cbor(&self) -> ByteBuffer {
-        serde_cbor::to_vec(&self).unwrap()
+        helpers::to_cbor_vec(&self).unwrap()
     }
 }
 
@@ -459,7 +460,7 @@ pub enum CanonicalData {
 }
 impl CanonicalData {
     pub fn to_cbor(&self) -> ByteBuffer {
-        serde_cbor::to_vec(&self).expect("CanonicalData encoding error")
+        helpers::to_cbor_vec(&self).expect("CanonicalData encoding error")
     }
 }
 
