@@ -1,5 +1,6 @@
 use crate::error::Error;
 use crate::error::ErrorList;
+use crate::helpers;
 
 use super::bundle::*;
 use super::crc::*;
@@ -335,7 +336,7 @@ impl CrcBlock for PrimaryBlock {
 }
 impl Block for PrimaryBlock {
     fn to_cbor(&self) -> ByteBuffer {
-        serde_cbor::to_vec(&self).expect("Error exporting primary block to cbor")
+        helpers::to_cbor_vec(&self).expect("Error exporting primary block to cbor")
     }
 }
 pub fn new_primary_block(

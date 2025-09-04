@@ -15,7 +15,7 @@ pub enum Error {
     BundleControlFlagsError(String),
     BlockControlFlagsError(String),
     JsonDecodeError(#[from] serde_json::Error),
-    CborDecodeError(#[from] serde_cbor::Error),
+    CborDecodeError(#[from] ciborium::de::Error<std::io::Error>),
 }
 
 impl fmt::Display for Error {
