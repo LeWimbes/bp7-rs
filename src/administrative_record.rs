@@ -1,5 +1,6 @@
 use crate::bundle::Bundle;
 use crate::bundle::ByteBuffer;
+use crate::dtntime::DTN_TIME_EPOCH;
 use crate::flags::BlockControlFlags;
 use crate::flags::BundleControlFlags;
 use crate::flags::BundleValidation;
@@ -94,7 +95,7 @@ impl<'de> Deserialize<'de> for AdministrativeRecord {
 
 impl AdministrativeRecord {
     pub fn to_payload(&self) -> crate::canonical::CanonicalBlock {
-        let data: ByteBuffer = serde_cbor::to_vec(&self).unwrap();
+        let data: ByteBuffer = minicbor_serde::to_vec(self).unwrap();
 
         crate::canonical::new_payload_block(BlockControlFlags::empty(), data)
     }
@@ -192,12 +193,12 @@ impl<'de> Deserialize<'de> for BundleStatusItem {
 
                 let mut status_requested = false;
 
-                let time: crate::DtnTime = if seq.size_hint() == Some(1) {
+                // Try to read an optional time element; don't rely on size_hint()
+                let time: crate::DtnTime = if let Some(t) = seq.next_element::<DtnTime>()? {
                     status_requested = true;
-                    seq.next_element::<DtnTime>()?
-                        .ok_or_else(|| de::Error::invalid_length(1, &self))?
+                    t
                 } else {
-                    0
+                    DTN_TIME_EPOCH
                 };
 
                 Ok(BundleStatusItem {
@@ -333,10 +334,8 @@ impl<'de> Deserialize<'de> for StatusReport {
                 let mut frag_offset = 0;
                 let mut frag_len = 0;
 
-                if seq.size_hint() == Some(2) {
-                    frag_offset = seq
-                        .next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(4, &self))?;
+                if let Some(ofs) = seq.next_element()? {
+                    frag_offset = ofs;
                     frag_len = seq
                         .next_element()?
                         .ok_or_else(|| de::Error::invalid_length(5, &self))?;
