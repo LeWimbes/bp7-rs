@@ -62,9 +62,9 @@ fn status_report_tests() {
     );
     assert_eq!(sr1.refbundle(), expected_refbundle);
 
-    let encoded_sr1 = serde_cbor::to_vec(&sr1).unwrap();
+    let encoded_sr1 = minicbor_serde::to_vec(&sr1).unwrap();
 
-    let sr1_dec: StatusReport = serde_cbor::from_slice(&encoded_sr1).unwrap();
+    let sr1_dec: StatusReport = minicbor_serde::from_slice(&encoded_sr1).unwrap();
 
     assert_eq!(sr1, sr1_dec);
 
@@ -76,9 +76,9 @@ fn status_report_tests() {
 
     let sr2 = dbg!(new_status_report(&bndl, DELETED_BUNDLE, LIFETIME_EXPIRED));
 
-    let encoded_sr2 = serde_cbor::to_vec(&sr2).unwrap();
+    let encoded_sr2 = minicbor_serde::to_vec(&sr2).unwrap();
 
-    let sr2_dec: StatusReport = serde_cbor::from_slice(&encoded_sr2).unwrap();
+    let sr2_dec: StatusReport = minicbor_serde::from_slice(&encoded_sr2).unwrap();
 
     assert_eq!(sr2, sr2_dec);
 

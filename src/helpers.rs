@@ -44,7 +44,7 @@ pub fn ser_dump<T: serde::ser::Serialize>(input: &T, hr: &str) {
     println!("human-readable | {}", hr);
     let json = serde_json::to_string(input).unwrap();
     println!("json | `{}`", json);
-    let cbor = serde_cbor::to_vec(input).unwrap();
+    let cbor = minicbor_serde::to_vec(input).unwrap();
     println!(
         "hex string | [`{}`](http://cbor.me/?bytes={})",
         hexify(&cbor),

@@ -197,11 +197,15 @@ impl<'de> Deserialize<'de> for PrimaryBlock {
                     .ok_or_else(|| de::Error::invalid_length(7, &self))?;
                 let lifetime = Duration::from_millis(lifetime_u64);
 
-                let rest = seq.size_hint().unwrap_or(0);
                 let mut fragmentation_offset: FragOffsetType = 0;
                 let mut total_data_length: TotalDataLengthType = 0;
 
-                if rest > 1 {
+                let has_fragment = BundleControlFlags::from_bits_truncate(bundle_control_flags)
+                    .contains(BundleControlFlags::BUNDLE_IS_FRAGMENT);
+                // 0..7 are fixed fields; indices 8,9 are the two fragment fields (if present)
+                let crc_index: usize = if has_fragment { 10 } else { 8 };
+
+                if has_fragment {
                     fragmentation_offset = seq
                         .next_element()?
                         .ok_or_else(|| de::Error::invalid_length(8, &self))?;
@@ -214,28 +218,36 @@ impl<'de> Deserialize<'de> for PrimaryBlock {
                 } else if crc_type == CRC_16 {
                     let crcbuf: ByteBuffer = seq
                         .next_element::<serde_bytes::ByteBuf>()?
-                        .ok_or_else(|| de::Error::invalid_length(7 + rest, &self))?
+                        .ok_or_else(|| de::Error::invalid_length(crc_index, &self))?
                         .into_vec();
                     let mut outbuf: [u8; 2] = [0; 2];
                     if crcbuf.len() != outbuf.len() {
-                        return Err(de::Error::invalid_length(7 + rest, &self));
+                        return Err(de::Error::invalid_length(crc_index, &self));
                     }
                     outbuf.copy_from_slice(&crcbuf);
                     CrcValue::Crc16(outbuf)
                 } else if crc_type == CRC_32 {
                     let crcbuf: ByteBuffer = seq
                         .next_element::<serde_bytes::ByteBuf>()?
-                        .ok_or_else(|| de::Error::invalid_length(7 + rest, &self))?
+                        .ok_or_else(|| de::Error::invalid_length(crc_index, &self))?
                         .into_vec();
                     let mut outbuf: [u8; 4] = [0; 4];
                     if crcbuf.len() != outbuf.len() {
-                        return Err(de::Error::invalid_length(7 + rest, &self));
+                        return Err(de::Error::invalid_length(crc_index, &self));
                     }
                     outbuf.copy_from_slice(&crcbuf);
                     CrcValue::Crc32(outbuf)
                 } else {
                     CrcValue::Unknown(crc_type)
                 };
+
+                // Ensure there are no unexpected extra elements in the primary block array
+                if seq.next_element::<serde::de::IgnoredAny>()?.is_some() {
+                    return Err(de::Error::custom(
+                        "unexpected extra elements in PrimaryBlock",
+                    ));
+                }
+
                 Ok(PrimaryBlock {
                     version,
                     bundle_control_flags,
@@ -335,7 +347,7 @@ impl CrcBlock for PrimaryBlock {
 }
 impl Block for PrimaryBlock {
     fn to_cbor(&self) -> ByteBuffer {
-        serde_cbor::to_vec(&self).expect("Error exporting primary block to cbor")
+        minicbor_serde::to_vec(self).expect("Error exporting primary block to cbor")
     }
 }
 pub fn new_primary_block(
