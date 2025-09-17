@@ -6,34 +6,34 @@ use std::convert::TryInto;
 #[test]
 fn canonical_data_tests() {
     let data = CanonicalData::Data(b"bla".to_vec());
-    let encoded_data = serde_cbor::to_vec(&data).expect("encoding error");
+    let encoded_data = serde_cbor_2::to_vec(&data).expect("encoding error");
     let decoded_data: CanonicalData =
-        serde_cbor::from_slice(&encoded_data).expect("decoding error");
+        serde_cbor_2::from_slice(&encoded_data).expect("decoding error");
     assert_eq!(data, decoded_data);
 
     let bundleage = dbg!(CanonicalData::BundleAge(23));
-    let encoded_bundleage = serde_cbor::to_vec(&bundleage).expect("encoding error");
+    let encoded_bundleage = serde_cbor_2::to_vec(&bundleage).expect("encoding error");
     let decoded_bundleage: CanonicalData =
-        serde_cbor::from_slice(&encoded_bundleage).expect("decoding error");
+        serde_cbor_2::from_slice(&encoded_bundleage).expect("decoding error");
     assert_eq!(bundleage, decoded_bundleage);
 
     let hopcount = CanonicalData::HopCount(23, 42);
-    let encoded_hopcount = serde_cbor::to_vec(&hopcount).expect("encoding error");
+    let encoded_hopcount = serde_cbor_2::to_vec(&hopcount).expect("encoding error");
     let decoded_hopcount: CanonicalData =
-        serde_cbor::from_slice(&encoded_hopcount).expect("decoding error");
+        serde_cbor_2::from_slice(&encoded_hopcount).expect("decoding error");
     assert_eq!(hopcount, decoded_hopcount);
 
     let previous = CanonicalData::PreviousNode("dtn://node1".try_into().unwrap());
-    let encoded_previous = serde_cbor::to_vec(&previous).expect("encoding error");
+    let encoded_previous = serde_cbor_2::to_vec(&previous).expect("encoding error");
     let decoded_previous: CanonicalData =
-        serde_cbor::from_slice(&encoded_previous).expect("decoding error");
+        serde_cbor_2::from_slice(&encoded_previous).expect("decoding error");
     assert_eq!(previous, decoded_previous);
 }
 
 fn encode_decode_test_canonical(data: CanonicalBlock) {
-    let encoded_data = serde_cbor::to_vec(&data).expect("encoding error");
+    let encoded_data = serde_cbor_2::to_vec(&data).expect("encoding error");
     let decoded_data: CanonicalBlock =
-        serde_cbor::from_slice(&encoded_data).expect("decoding error");
+        serde_cbor_2::from_slice(&encoded_data).expect("decoding error");
     assert_eq!(data, decoded_data);
 
     println!("{:?}", decoded_data.data());

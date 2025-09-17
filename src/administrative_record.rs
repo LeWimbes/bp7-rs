@@ -94,7 +94,7 @@ impl<'de> Deserialize<'de> for AdministrativeRecord {
 
 impl AdministrativeRecord {
     pub fn to_payload(&self) -> crate::canonical::CanonicalBlock {
-        let data: ByteBuffer = serde_cbor::to_vec(&self).unwrap();
+        let data: ByteBuffer = serde_cbor_2::to_vec(&self).unwrap();
 
         crate::canonical::new_payload_block(BlockControlFlags::empty(), data)
     }
