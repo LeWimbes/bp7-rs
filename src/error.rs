@@ -15,7 +15,7 @@ pub enum Error {
     BundleControlFlagsError(String),
     BlockControlFlagsError(String),
     JsonDecodeError(#[from] serde_json::Error),
-    CborDecodeError(#[from] serde_cbor::Error),
+    CborDecodeError(String),
 }
 
 impl fmt::Display for Error {
@@ -23,6 +23,12 @@ impl fmt::Display for Error {
         write!(f, "{:?}", self)
         // or, alternatively:
         // fmt::Debug::fmt(self, f)
+    }
+}
+
+impl<E: fmt::Debug> From<cbor4ii::serde::DecodeError<E>> for Error {
+    fn from(err: cbor4ii::serde::DecodeError<E>) -> Self {
+        Error::CborDecodeError(format!("{:?}", err))
     }
 }
 
