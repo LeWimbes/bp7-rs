@@ -157,15 +157,15 @@ impl<'de> Deserialize<'de> for EndpointID {
                 if eid_type == ENDPOINT_URI_SCHEME_DTN {
                     // TODO: rewrite to check following type, currently if not string return dtn:none
                     //let peek_next_str = seq.next_element::<String>();
-                    let peek_next = seq.next_element::<serde_cbor::Value>()?;
+                    let peek_next = seq.next_element::<serde_cbor_2::Value>()?;
                     if peek_next.is_none() {
                         return Err(de::Error::invalid_length(1, &self));
                     }
                     let peek_next = peek_next.unwrap();
-                    if let serde_cbor::Value::Text(name) = peek_next {
+                    if let serde_cbor_2::Value::Text(name) = peek_next {
                         // This is a dtn address
                         Ok(EndpointID::Dtn(eid_type, DtnAddress(name)))
-                    } else if let serde_cbor::Value::Integer(code) = peek_next {
+                    } else if let serde_cbor_2::Value::Integer(code) = peek_next {
                         // This is the dtn:none endpoint
                         let code = code as u64;
                         if code != 0 {
@@ -563,17 +563,17 @@ mod tests {
     #[test_case("ipn:23.42".try_into().unwrap() ; "when using ipn address")]
     #[test_case("dtn://node1/incoming".try_into().unwrap() ; "when using dtn address")]
     fn serialize_deserialize_tests(eid: EndpointID) {
-        let encoded_eid = serde_cbor::to_vec(&eid).expect("Error serializing packet as cbor.");
+        let encoded_eid = serde_cbor_2::to_vec(&eid).expect("Error serializing packet as cbor.");
         println!("{:02x?}", &encoded_eid);
         assert_eq!(
             eid,
-            serde_cbor::from_slice(&encoded_eid).expect("Decoding packet failed")
+            serde_cbor_2::from_slice(&encoded_eid).expect("Decoding packet failed")
         );
     }
 
     #[test_case(&[130, 1, 108, 47, 47, 110, 111, 100, 101, 49, 47, 116, 101, 115, 116] => "dtn://node1/test"; "when decoding full dtn address")]
     fn test_ser_eid(cbor_eid: &[u8]) -> String {
-        let deserialized: EndpointID = serde_cbor::from_slice(cbor_eid).unwrap();
+        let deserialized: EndpointID = serde_cbor_2::from_slice(cbor_eid).unwrap();
         deserialized.to_string()
     }
 }

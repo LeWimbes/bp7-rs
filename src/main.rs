@@ -104,7 +104,7 @@ fn decode_from_stdin(payload_only: bool) {
         .read_to_end(&mut buf)
         .expect("Error reading from stdin.");
     //println!("decode: {:02x?}", &buf);
-    //serde_cbor::from_slice::<serde_cbor::Value>(&buf).unwrap();
+    //serde_cbor_2::from_slice::<serde_cbor_2::Value>(&buf).unwrap();
     buf_to_bundle(buf, payload_only);
 }
 fn buf_to_bundle(buf: Vec<u8>, payload_only: bool) {
