@@ -335,7 +335,7 @@ impl CrcBlock for PrimaryBlock {
 }
 impl Block for PrimaryBlock {
     fn to_cbor(&self) -> ByteBuffer {
-        serde_cbor::to_vec(&self).expect("Error exporting primary block to cbor")
+        cbor4ii::serde::to_vec(Vec::new(), &self).expect("Error exporting primary block to cbor")
     }
 }
 pub fn new_primary_block(

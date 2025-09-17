@@ -159,11 +159,8 @@ impl IntegrityProtectedPlaintext {
             .contains(IntegrityScopeFlags::INTEGRITY_PRIMARY_HEADER)
         {
             if let Some(pb) = &self.primary_block {
-                optional_ippt_data.append(
-                    serde_cbor::to_vec(pb)
-                        .expect("Error creating canonical form of primary block")
-                        .as_mut(),
-                );
+                cbor4ii::serde::to_writer(&mut optional_ippt_data, pb)
+                    .expect("Error creating canonical form of primary block");
             } else {
                 eprintln!("Primary header flag set but no primary header given!")
             }
@@ -172,67 +169,67 @@ impl IntegrityProtectedPlaintext {
             .scope_flags
             .contains(IntegrityScopeFlags::INTEGRITY_PAYLOAD_HEADER)
         {
-            optional_ippt_data.append(
-                self.construct_payload_header(payload_block)
-                    .expect("Error constructing payload header")
-                    .as_mut(),
-            );
+            self.construct_payload_header(&mut optional_ippt_data, payload_block)
+                .expect("Error constructing payload header");
         }
         if self
             .scope_flags
             .contains(IntegrityScopeFlags::INTEGRITY_SECURITY_HEADER)
         {
             if let Some(sh) = &self.security_header {
-                optional_ippt_data.append(
-                    self.construct_security_header(sh)
-                        .expect("Error constructing security header")
-                        .as_mut(),
-                );
+                self.construct_security_header(&mut optional_ippt_data, sh)
+                    .expect("Error constructing security header");
             } else {
                 eprintln!("Security header flag set but no security header given!")
             }
         }
 
-        self.security_target_contents = serde_cbor::to_vec(&payload_block.data()).unwrap();
+        self.security_target_contents =
+            cbor4ii::serde::to_vec(Vec::new(), &payload_block.data()).unwrap();
 
         // create canonical form of other data
         if !matches!(payload_block.data(), CanonicalData::Data(_)) {
             let temp_bytes = serde_bytes::Bytes::new(self.security_target_contents.as_slice());
-            self.security_target_contents = serde_cbor::to_vec(&temp_bytes).unwrap();
+            self.security_target_contents =
+                cbor4ii::serde::to_vec(Vec::new(), &temp_bytes).unwrap();
         }
 
         let mut ippt = Vec::<u8>::new();
-        ippt.append(
-            &mut serde_cbor::to_vec(&self.scope_flags)
-                .expect("Error creating canonical form of scope flags"),
-        );
+        cbor4ii::serde::to_writer(&mut ippt, &self.scope_flags)
+            .expect("Error creating canonical form of scope flags");
         ippt.append(&mut optional_ippt_data);
         ippt.append(&mut self.security_target_contents);
         println!("ippt hex {:?}", hexify(&ippt));
         ippt
     }
 
-    fn construct_payload_header(
+    fn construct_payload_header<W>(
         &self,
+        mut writer: W,
         payload_block: &CanonicalBlock,
-    ) -> Result<ByteBuffer, serde_cbor::Error> {
-        let mut header = Vec::<u8>::new();
-        header.append(&mut serde_cbor::to_vec(&payload_block.block_type)?);
-        header.append(&mut serde_cbor::to_vec(&payload_block.block_number)?);
-        header.append(&mut serde_cbor::to_vec(&payload_block.block_control_flags)?);
-        //header.append(&mut serde_cbor::to_vec(&payload_block.crc.to_code())?); //TODO: check if not needed?
-        Ok(header)
+    ) -> Result<(), Box<dyn std::error::Error>>
+    where
+        W: std::io::Write,
+    {
+        cbor4ii::serde::to_writer(&mut writer, &payload_block.block_type)?;
+        cbor4ii::serde::to_writer(&mut writer, &payload_block.block_number)?;
+        cbor4ii::serde::to_writer(&mut writer, &payload_block.block_control_flags)?;
+        //cbor4ii::serde::to_writer(&mut writer, &payload_block.crc.to_code())?; //TODO: check if not needed?
+        Ok(())
     }
 
-    fn construct_security_header(
+    fn construct_security_header<W>(
         &self,
+        mut writer: W,
         security_block_parameter: &SecurityBlockHeader,
-    ) -> Result<ByteBuffer, serde_cbor::Error> {
-        let mut header = Vec::<u8>::new();
-        header.append(&mut serde_cbor::to_vec(&security_block_parameter.0)?);
-        header.append(&mut serde_cbor::to_vec(&security_block_parameter.1)?);
-        header.append(&mut serde_cbor::to_vec(&security_block_parameter.2)?);
-        Ok(header)
+    ) -> Result<(), Box<dyn std::error::Error>>
+    where
+        W: std::io::Write,
+    {
+        cbor4ii::serde::to_writer(&mut writer, &security_block_parameter.0)?;
+        cbor4ii::serde::to_writer(&mut writer, &security_block_parameter.1)?;
+        cbor4ii::serde::to_writer(&mut writer, &security_block_parameter.2)?;
+        Ok(())
     }
 }
 
@@ -564,11 +561,11 @@ impl IntegrityBlock {
     pub fn to_cbor(&self) -> ByteBuffer {
         let mut cbor_format = Vec::<u8>::new();
 
-        cbor_format.append(&mut serde_cbor::to_vec(&self.security_targets).unwrap());
-        cbor_format.append(&mut serde_cbor::to_vec(&self.security_context_id).unwrap());
-        cbor_format.append(&mut serde_cbor::to_vec(&self.security_context_flags).unwrap());
-        cbor_format.append(&mut serde_cbor::to_vec(&self.security_source).unwrap());
-        cbor_format.append(&mut serde_cbor::to_vec(&self.security_context_parameters).unwrap());
+        cbor4ii::serde::to_writer(&mut cbor_format, &self.security_targets).unwrap();
+        cbor4ii::serde::to_writer(&mut cbor_format, &self.security_context_id).unwrap();
+        cbor4ii::serde::to_writer(&mut cbor_format, &self.security_context_flags).unwrap();
+        cbor4ii::serde::to_writer(&mut cbor_format, &self.security_source).unwrap();
+        cbor4ii::serde::to_writer(&mut cbor_format, &self.security_context_parameters).unwrap();
 
         // iterate through each target. Create bytes for each signature and onstruct security results format again
         let mut res = Vec::new();
@@ -577,7 +574,7 @@ impl IntegrityBlock {
             let temp_mac = serde_bytes::Bytes::new(&next_result[0].1);
             res.push(vec![(&next_result[0].0, temp_mac)]);
         }
-        cbor_format.append(&mut serde_cbor::to_vec(&res).unwrap());
+        cbor4ii::serde::to_writer(&mut cbor_format, &res).unwrap();
         cbor_format
     }
 }
